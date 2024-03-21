@@ -1,11 +1,9 @@
 CC = g++
-CFLAGS = -std=c++11
+CFLAGS = -std=c++11 -Wall
 
-EXECUTABLE = kruskal.bin
-SOURCE = kruskal.cpp
+all: kruskal 
 
-$(EXECUTABLE): $(SOURCE)
-	$(CC) $(CFLAGS) $^ -o $@
-
+kruskal: kruskal.cpp
+	$(CC) $(CFLAGS) kruskal.cpp -o kruskal.bin
 clean:
-	rm -f $(EXECUTABLE)
+	rm -f kruskal.bin
