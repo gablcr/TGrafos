@@ -1,11 +1,9 @@
 CC = g++
-CFLAGS = -std=c++11
+CFLAGS = -std=c++11 -Wall
 
-EXECUTABLE = prim.bin
-SOURCE = prim.cpp
+all: prim
 
-$(EXECUTABLE): $(SOURCE)
-	$(CC) $(CFLAGS) $^ -o $@
-
+prim: prim.cpp
+	$(CC) $(CFLAGS) prim.cpp -o prim.bin
 clean:
-	rm -f $(EXECUTABLE)
+	rm -f prim.bin
