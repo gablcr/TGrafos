@@ -1,128 +1,101 @@
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <list>
-#include <queue>
-#include <cstring>
-#include <cstdlib>
-
+#include <bits/stdc++.h>
 using namespace std;
 
-#define INF 0x3f3f3f3f
+vector<vector<pair<int, int>>> adjacencia;
 
-typedef pair<int, int> iPair;
+void dijkstra(int comeco, ostream& out){
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> fila;
 
-class Graph {
-    int V;
-    list<pair<int, int>>* adj;
+    vector<int> distancia(adjacencia.size(), INT_MAX);
 
-public:
-    Graph(int V);
-    void addEdge(int u, int v, int w);
-    vector<int> shortestPath(int src);
-};
+    fila.push(make_pair(0, comeco));
+    distancia[comeco] = 0;
 
-Graph::Graph(int V) {
-    this->V = V;
-    adj = new list<iPair>[V + 1];
-}
+    while(!fila.empty()){
+        int v1 = fila.top().second;
+        fila.pop();
 
-void Graph::addEdge(int u, int v, int w) {
-    adj[u].push_back(make_pair(v, w));
-    adj[v].push_back(make_pair(u, w));
-}
-
-vector<int> Graph::shortestPath(int src) {
-    priority_queue<iPair, vector<iPair>, greater<iPair>> pq;
-    vector<int> dist(V + 1, INF);
-
-    pq.push(make_pair(0, src));
-    dist[src] = 0;
-
-    while (!pq.empty()) {
-        int u = pq.top().second;
-        pq.pop();
-
-        for (const auto& i : adj[u]) {
-            int v = i.first;
-            int weight = i.second;
-
-            if (dist[v] > dist[u] + weight) {
-                dist[v] = dist[u] + weight;
-                pq.push(make_pair(dist[v], v));
+        for(const auto &[v2, peso] : adjacencia[v1]){
+            if(distancia[v2] > distancia[v1] + peso){
+                distancia[v2] = distancia[v1] + peso;
+                fila.push(make_pair(distancia[v2], v2));
             }
         }
     }
 
-    return dist;
+    for(int i = 0; i < adjacencia.size(); ++i){
+        if (distancia[i] == INT_MAX){
+            out << i + 1 << ":-1 ";
+        }
+        else{
+            out << i + 1 << ":" << distancia[i] << " ";
+        }
+    }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]){
     string input_file = "";
     string output_file = "";
-    int startVertex = 1;
+    int inicial = 0;
 
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-h") == 0) {
-            cout << "Ajuda:" << endl;
-            cout << "-h: Ajuda" << endl;
-            cout << "-f <input_file>: indica o arquivo de input" << endl;
-            cout << "-o <output_file>: direciona o output para o arquivo" << endl;
-            cout << "-i: vértice inicial" << endl;
+    for(int i = 1; i < argc; i++){
+        string arg = argv[i];
+
+        if(arg == "-h"){
+            cout << "Help:" << endl;
+            cout << "-h: Mostra help" << endl;
+            cout << "-o <arquivo>: redireciona output para arquivo" << endl;
+            cout << "-f <arquivo>: especifica o arquivo com o grafo de input" << endl;
+            cout << "-i: vertice inicial" << endl;
             return 0;
-        } else if (strcmp(argv[i], "-o") == 0 && i < argc - 1) {
+        } 
+        else if(arg == "-o" && i < argc - 1){
             output_file = argv[++i];
-        } else if (strcmp(argv[i], "-f") == 0 && i < argc - 1) {
+        } 
+        else if(arg == "-f" && i < argc - 1){
             input_file = argv[++i];
-        } else if (strcmp(argv[i], "-i") == 0 && i < argc - 1) {
-            startVertex = atoi(argv[++i]);
+        } 
+        else if(arg == "-i" && i < argc - 1){
+            inicial = atoi(argv[++i]);
+            inicial--;
         }
     }
 
-    if (input_file == "") {
-        cerr << "Nenhum arquivo de entrada especificado. Use o parâmetro -f." << endl;
+    if(input_file == ""){
+        cerr << "Arquivo de entrada nao especificado. Use o parametro -f." << endl;
         return 1;
     }
 
     ifstream fin(input_file);
-    if (!fin) {
-        cerr << "Não foi possível abrir o arquivo de entrada: " << input_file << endl;
+
+    if(!fin){
+        cerr << "Nao foi possivel abrir o arquivo de entrada: " << input_file << endl;
         return 1;
     }
 
-    int V, E;
-    fin >> V >> E;
-    Graph g(V);
+    int qtd_v, qtd_a;
+    fin >> qtd_v >> qtd_a;
 
-    int a, b, wt;
-    for (int i = 0; i < E; i++) {
-        fin >> a >> b >> wt;
-        g.addEdge(a, b, wt);
+    adjacencia.resize(qtd_v);
+
+    for(int i = 0; i < qtd_a; i++){
+        int v1, v2, peso;
+        fin >> v1 >> v2 >> peso;
+        adjacencia[v1-1].emplace_back(v2-1, peso);
+        adjacencia[v2-1].emplace_back(v1-1, peso);
     }
 
     fin.close();
 
-    vector<int> distances = g.shortestPath(startVertex);
-
-    if (!(output_file == "")) {
+    if(!output_file.empty()){
         ofstream fout(output_file);
-        if (!fout) {
-            cerr << "Não foi possível abrir o arquivo de saída: " << output_file << endl;
+        if(!fout){
+            cerr << "Nao foi possivel criar o arquivo de saida: " << output_file << endl;
             return 1;
         }
-        
-        for (int i = 1; i <= V; ++i) {
-            fout << i << ":" << distances[i] << " ";
-        }
-        fout << endl;
-
+        dijkstra(inicial, fout);
         fout.close();
-    }
-
-    for (int i = 1; i <= V; ++i) {
-        cout << i << ":" << distances[i] << " ";
-    }
-    cout << endl;
-
+    } 
+    dijkstra(inicial, cout);
     return 0;
 }
