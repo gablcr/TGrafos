@@ -1,11 +1,9 @@
 CC = g++
-CFLAGS = -std=c++11
+CFLAGS = -std=c++11 -Wall
 
-EXECUTABLE = bellman.bin
-SOURCE = bellman.cpp
+all: bellman 
 
-$(EXECUTABLE): $(SOURCE)
-	$(CC) $(CFLAGS) $^ -o $@
-
+bellman: bellman.cpp
+	$(CC) $(CFLAGS) bellman.cpp -o bellman.bin
 clean:
-	rm -f $(EXECUTABLE)
+	rm -f bellman.bin
