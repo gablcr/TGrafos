@@ -1,117 +1,110 @@
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <climits>
-#include <cstring>
+#include <bits/stdc++.h>
 
 using namespace std;
 
-void BellmanFord(vector<vector<int>> graph, int num_vertices, int write_to_file, string output_file, int source_vertex) {
-    vector<int> distance(num_vertices, INT_MAX);
-    distance[source_vertex - 1] = 0;
-    
-    for (int i = 0; i < num_vertices - 1; i++) {
-        for (auto edge : graph) {
-            int u = edge[0];
-            int v = edge[1];
-            int weight = edge[2];
-            if (distance[u] != INT_MAX && (distance[u] + weight) < distance[v]) {
+struct Edge {
+    int end_vertex;
+    int weight;
+};
+
+void BellmanFord(vector<vector<Edge>>& graph, vector<vector<int>>& weights, int n, int start_vertex) {
+    vector<int> distance(n + 1, numeric_limits<int>::max());
+    distance[start_vertex] = 0;
+
+    for (int u = 1; u <= n; u++) {
+        for (const Edge& edge : graph[u]) {
+            int v = edge.end_vertex;
+            int weight = edge.weight;
+
+            if (distance[u] != numeric_limits<int>::max() && distance[u] + weight < distance[v]) {
                 distance[v] = distance[u] + weight;
             }
         }
     }
 
-    // Verifica se há ciclo negativo
-    for (auto edge : graph) {
-        int u = edge[0];
-        int v = edge[1];
-        int weight = edge[2];
-        if (distance[u] != INT_MAX && (distance[u] + weight) < distance[v]) {
-            cout << "O grafo contém um ciclo negativo!" << endl;
-            return;
-        }
-    }
+    for (int u = 1; u <= n; u++) {
+        for (const Edge& edge : graph[u]) {
+            int v = edge.end_vertex;
+            int weight = edge.weight;
 
-    // Imprime as distâncias mínimas
-    int counter = 1;
-    vector<string> write(num_vertices);
-    for (auto dist : distance) {
-        write[counter - 1] = to_string(counter) + ":" + to_string(dist);
-        cout << counter << ":" << dist << " ";
-        counter++;
-    }
-    cout << endl;
-
-    // Escreve no arquivo, se necessário
-    if (write_to_file != 0) {
-        ofstream file(output_file);
-        if (file.is_open()) {
-            for (int i = 0; i < num_vertices - 1; i++) {
-                file << write[i] << "\n";
+            if (distance[u] != numeric_limits<int>::max() && distance[u] + weight < distance[v]) {
+                cerr << "Negative weight cycle detected." << endl;
+                return;
             }
-            file.close();
-            cout << "Array escrito no arquivo com sucesso." << endl;
-        } else {
-            cout << "Não foi possível criar o arquivo." << endl;
         }
+    }
+
+    for (int i = 1; i <= n; i++) {
+        if (distance[i] == 2147483647)
+        {
+             cout << "Não existe caminho no grafo de " << start_vertex << " para " << i << "." << endl;
+        }
+        else
+        cout << "distancia mínima de " << start_vertex << " para " << i << ": " << distance[i] << endl;
     }
 }
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char* argv[]) {
     string input_file = "";
     string output_file = "";
     bool show_solution = false;
     int start_vertex = 1;
-    int write_to_file = 0;
-
-    // Menu de ajuda
-    if (argc > 1 && strcmp(argv[1], "-h") == 0) {
-        cout << "Help:" << endl;
-        cout << "-h : Ajuda" << endl;
-        cout << "-f <input_file>: indica o arquivo de input" << endl;
-        cout << "-o <output_file>: direciona o output para o arquivo" << endl;
-        cout << "-i : Vértice inicial" << endl;
-        cout << "-s: solução" << endl;
-        return 0;
-    }
 
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-o") == 0 && i < argc - 1) {
-            write_to_file = 1;
+        if (strcmp(argv[i], "-h") == 0) {
+            cout << "Help:" << endl;
+            cout << "-h: Mostra help" << endl;
+            cout << "-o <arquivo>: redireciona output para arquivo" << endl;
+            cout << "-f <arquivo>: especifica o arquivo com o grafo de input" << endl;
+            cout << "-i: vertice inicial" << endl;
+            return 0;
+        } else if (strcmp(argv[i], "-o") == 0 && i < argc - 1) {
             output_file = argv[++i];
         } else if (strcmp(argv[i], "-f") == 0 && i < argc - 1) {
-            input_file = argv[++i];
-        } else if (strcmp(argv[i], "-s") == 0) {
-            show_solution = true;
+            input_file = argv[i + 1];
         } else if (strcmp(argv[i], "-i") == 0 && i < argc - 1) {
             start_vertex = atoi(argv[++i]);
         }
     }
 
     if (input_file == "") {
-        cerr << "Nenhum arquivo de entrada especificado. Use o parâmetro -f." << endl;
+        cerr << "No input file specified. Use the -f parameter." << endl;
         return 1;
     }
 
-    ifstream fin(input_file);
+    ifstream fin;
+    fin.open(input_file);
+
     if (!fin) {
-        cerr << "Não foi possível abrir o arquivo de entrada: " << input_file << endl;
+        cerr << "Could not open input file: " << input_file << endl;
         return 1;
     }
 
-    int num_vertices, num_edges;
-    fin >> num_vertices >> num_edges;
-    vector<vector<int>> graph;
-    for (int i = 0; i < num_edges; i++) {
+    int n, m;
+    fin >> n >> m;
+
+    vector<vector<Edge>> graph(n + 1);
+    vector<vector<int>> weights(n + 1, vector<int>(n + 1, numeric_limits<int>::max()));
+
+    for (int i = 0; i < m; i++) {
         int u, v, weight;
         fin >> u >> v >> weight;
-        u--, v--;  // Para garantir que os vértices sejam zero-indexados
-        graph.push_back({u, v, weight});
+
+        if (u < 0 || v < 0) {
+            cout << "Invalid input" << endl;
+            return 0;
+        }
+
+        Edge new_edge;
+        new_edge.end_vertex = v;
+        new_edge.weight = weight;
+
+        graph[u].push_back(new_edge);
+        weights[u][v] = weight;
+        weights[v][u] = weight;
     }
 
-    fin.close();
-
-    BellmanFord(graph, num_vertices, write_to_file, output_file, start_vertex);
+    BellmanFord(graph, weights, n, start_vertex);
 
     return 0;
 }
