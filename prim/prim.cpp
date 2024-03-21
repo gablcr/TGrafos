@@ -1,131 +1,164 @@
-#include <iostream>
-#include <vector>
-#include <queue>
-#include <fstream>
-#include <climits>
-
+#include <bits/stdc++.h>
 using namespace std;
 
-typedef pair<int, int> iPair;
+typedef struct solucao{
+    vector<int> prev;
+    vector<int> custo;
+}prim_solucao;
 
-struct Grafo {
-    int V;
-    vector<vector<int>> adj;
+prim_solucao prim(int n, vector<vector<pair<int,int>>> graph, int r)
+{
+    priority_queue<pair<int, int>,vector<pair<int, int> >, greater<pair<int, int>>> pq;
 
-    Grafo(int V) : V(V), adj(V, vector<int>(V, 0)) {}
-
-    void addAresta(int u, int v, int w) {
-        adj[u][v] = w;
-        adj[v][u] = w;
-    }
-};
-
-vector<pair<int, int>> primAGM(const Grafo& grafo) {
-    vector<bool> naAGM(grafo.V, false);
-    vector<pair<int, int>> arestas;
-    vector<int> pesos(grafo.V, INT_MAX);
-    vector<int> pais(grafo.V, -1);
-
-    priority_queue<iPair, vector<iPair>, greater<iPair>> pq;
-
-    pesos[0] = 0;
-    pq.push({0, 0});
-
-    while (!pq.empty()) {
-        int u = pq.top().second;
+    vector<bool> visitado(n, false);
+    vector<int> custo(n, INT_MAX);
+    vector<int> prev(n, -1);
+    
+    custo[r] = 0;
+    pq.push({0, r});
+    
+    while(!pq.empty()){
+        auto v = pq.top();
         pq.pop();
-        naAGM[u] = true;
 
-        for (int v = 0; v < grafo.V; ++v) {
-            if (grafo.adj[u][v] && !naAGM[v] && grafo.adj[u][v] < pesos[v]) {
-                pesos[v] = grafo.adj[u][v];
-                pais[v] = u;
-                pq.push({pesos[v], v});
+        int node = v.second;
+        int wt = v.first;
+        
+        visitado[node] = true;
+
+        for (auto u: graph[node]){
+            int w = u.first;
+            int p = u.second;
+            if (!visitado[w] && p < custo[w]){
+                custo[w] = p;
+                pq.push({p, w});
+                prev[w] = node;
             }
         }
     }
-
-    for (int i = 1; i < grafo.V; ++i)
-        arestas.push_back({pais[i], i});
-
-    return arestas;
+    
+    prim_solucao solucao;
+    solucao.prev = prev;
+    solucao.custo = custo;
+    return solucao;
 }
 
-int main(int argc, char *argv[]) {
-    string arquivo_entrada = "";
-    string arquivo_saida = "";
-    bool mostrar_solucao = false;
-    int vertice_inicial = 1;
 
-    // Interpretar argumentos da linha de comando
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-h") == 0) {
-            cout << "Ajuda:" << endl;
-            cout << "-h: Ajuda" << endl;
-            cout << "-f <arquivo_entrada>: indica o arquivo de input" << endl;
-            cout << "-o <arquivo_saida>: direciona o output para o arquivo" << endl;
-            cout << "-i: vértice inicial de acordo com o algoritmo de Prim" << endl;
+
+int main(int argc, char *argv[]){
+
+    string input_file = "";
+    string output_file = "";
+    int inicial = 1;
+    int printagm = 0;
+
+    for(int i = 0; i < argc; i++){
+        string arg = argv[i];
+
+        if(strcmp(argv[i], "-h") == 0){
+            cout << "Help:" << endl;
+            cout << "-h: Mostra help" << endl;
+            cout << "-o <arquivo>: redireciona output para arquivo" << endl;
+            cout << "-f <arquivo>: especifica o arquivo com o grafo de input" << endl;
             cout << "-s: solução" << endl;
-            return 0;
-        } else if (strcmp(argv[i], "-o") == 0 && i < argc - 1) {
-            arquivo_saida = argv[++i];
-        } else if (strcmp(argv[i], "-f") == 0 && i < argc - 1) {
-            arquivo_entrada = argv[++i];
-        } else if (strcmp(argv[i], "-s") == 0) {
-            mostrar_solucao = true;
-        } else if (strcmp(argv[i], "-i") == 0 && i < argc - 1) {
-            vertice_inicial = atoi(argv[++i]);
+            cout << "-i: vertice inicial" << endl;
+            return 0;;
         }
-    }
+        else if(arg == "-o" && i < argc - 1){
+            output_file = argv[++i];
+        } 
+        else if(arg == "-f" && i < argc - 1){
+            input_file = argv[++i];
+        } 
+        else if(arg == "-s"){
+            printagm = 1;
+        }
+        else if(arg == "-i" && i < argc - 1){
+            inicial = atoi(argv[++i]);
+            inicial--;
+        }
 
-    if (arquivo_entrada == "") {
-        cerr << "Nenhum arquivo de entrada especificado. Use o parâmetro -f." << endl;
+    }
+    ifstream fin(input_file);
+    if(fin.fail() == 1){
+        cout << "Arquivo não encontrado";
+        return 1;
+    }
+    if(input_file == ""){
+        cerr << "Arquivo de entrada nao especificado. Use o parametro -f." << endl;
         return 1;
     }
 
-    ifstream fin(arquivo_entrada);
-    if (!fin) {
-        cerr << "Não foi possível abrir o arquivo de entrada: " << arquivo_entrada << endl;
+    if(!fin){
+        cerr << "Nao foi possivel abrir o arquivo de entrada: " << input_file << endl;
         return 1;
     }
+    
+    int qtd_v, qtd_a;
+    fin >> qtd_v >> qtd_a;
+    if(inicial >= qtd_v || inicial < 0){
+        cout << "Vertice inicial nao pertence ao grafo";
+        return 2;
+    }
+    
 
-    int N, m;
-    fin >> N >> m;
-    Grafo g(N);
+	vector<vector<pair<int,int>>> graph(qtd_v);
 
-    int a, b, wt;
-    for (int i = 0; i < m; i++) {
-        fin >> a >> b >> wt;
-        g.addAresta(a, b, wt);
+    for(int i = 0; i < qtd_a; i++){
+        int v1, v2, p;
+        fin >> v1 >> v2 >> p;
+        pair<int, int> edge;
+        edge.first = v2 - 1;
+        edge.second = p;
+        graph[v1 - 1].push_back(edge);
+
+        edge.first = v1 - 1;
+        graph[v2 - 1].push_back(edge);
     }
 
     fin.close();
 
-    vector<pair<int, int>> arestasAGM = primAGM(g);
+    vector<vector<int>> graph_agm(qtd_v);
+	prim_solucao result = prim(qtd_v, graph, inicial);
 
-    if (!(arquivo_saida == "")) {
-        ofstream fout(arquivo_saida);
-        if (!fout) {
-            cerr << "Não foi possível abrir o arquivo de saída: " << arquivo_saida << endl;
+
+    int soma = 0;
+
+    for(int peso: result.custo){
+        soma += peso;
+    }
+    for(int i = 0; i < qtd_v; i++){
+        if (result.prev[i] != -1)
+            graph_agm[i].push_back(result.prev[i]);
+    }
+    if(!output_file.empty()){
+        ofstream fout(output_file);
+        if(fout.fail() == 1){
+            cerr << "Nao foi possivel abrir o arquivo de saida: " << output_file << endl;
             return 1;
         }
-
-        if (mostrar_solucao) {
-            for (const auto& aresta : arestasAGM)
-                fout << "(" << aresta.first << "," << aresta.second << ") ";
-        } else {
-            fout << endl;
+        if(printagm==1){
+            for (int i = 0; i < graph_agm.size(); i++)
+                if (graph_agm[i].size() > 0)
+                    for (int v: graph_agm[i])
+                        fout << "(" << i + 1 << "," << v + 1 << ") ";
         }
-
+        else{
+            fout << soma << endl;
+        }
         fout.close();
     }
-
-    if (mostrar_solucao) {
-        for (const auto& aresta : arestasAGM)
-            cout << "(" << aresta.first << "," << aresta.second << ") ";
-    } else {
-        cout << endl;
+    if(printagm==1){
+        for (int i = 0; i < graph_agm.size(); i++){
+            if (graph_agm[i].size() > 0)
+                for (int v: graph_agm[i]){
+                    cout << "(" << i + 1 << "," << v + 1 << ") ";
+                }
+        }
+    }
+    else{
+        cout << soma << endl;
     }
 
-    return 0;
+	return 0;
 }
