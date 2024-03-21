@@ -1,11 +1,9 @@
 CC = g++
-CFLAGS = -std=c++11
+CFLAGS = -std=c++11 -Wall
 
-EXECUTABLE = dijkstra.bin
-SOURCE = dijkstra.cpp
+all: dijkstra 
 
-$(EXECUTABLE): $(SOURCE)
-	$(CC) $(CFLAGS) $^ -o $@
-
+dijkstra: dijkstra.cpp
+	$(CC) $(CFLAGS) dijkstra.cpp -o dijkstra.bin
 clean:
-	rm -f $(EXECUTABLE)
+	rm -f dijkstra.bin
